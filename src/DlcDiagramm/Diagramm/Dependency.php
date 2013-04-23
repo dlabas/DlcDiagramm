@@ -13,6 +13,7 @@ class Dependency implements DependencyInterface
     const TYPE_GENERALIZATION = 'generalization';
     const TYPE_INCLUSION      = 'inclusion';
     const TYPE_INHERITANCE    = 'inheritance';
+    const TYPE_CLASS_INHERITANCE = 'class-inheritance';
     const TYPE_REALIZATION    = 'realization';
     
     

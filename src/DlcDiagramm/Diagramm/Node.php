@@ -7,6 +7,7 @@ use Zend\Stdlib\ArrayObject;
 
 class Node implements NodeInterface
 {
+    const TYPE_NOTE     = 'Note';
     const TYPE_USE_CASE = 'UseCase';
     
     /**

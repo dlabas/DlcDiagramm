@@ -27,8 +27,8 @@ class Module extends AbstractModule
                 },
                 'dlcdiagramm_yuml_generator' => function ($sm) {
                     $filter = new \Zend\Filter\FilterChain();
-                    $filter->attach(new \Zend\Filter\Word\DashToUnderscore())
-                           ->attach(new \Zend\Filter\Word\SeparatorToCamelCase(' '));
+                    $filter->attach(new \Zend\Filter\Word\SeparatorToCamelCase(' '))
+                           ->attach(new \Zend\Filter\Word\DashToUnderscore());
                     
                     $generator  = new \DlcDiagramm\Generator\Yuml($sm->get('dlcdiagramm_yuml_httpclient'));
                     $generator->setFilter($filter);

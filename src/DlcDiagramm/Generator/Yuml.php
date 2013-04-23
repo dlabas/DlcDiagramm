@@ -8,6 +8,7 @@ use DlcDiagramm\Diagramm\Dependency\DependencyInterface;
 use DlcDiagramm\Diagramm\DiagrammInterface;
 use DlcDiagramm\Diagramm\Node;
 use DlcDiagramm\Diagramm\Node\NodeInterface;
+use DlcDiagramm\Diagramm\NoteProviderInterface;
 use Zend\Http\Client;
 
 class Yuml extends AbstractGenerator
@@ -34,14 +35,15 @@ class Yuml extends AbstractGenerator
      * @var array
      */
     protected $dependncyTypeToDslText = array(
-        Dependency::TYPE_ASSOCIATION    => '-',
-        //Dependency::TYPE_AGGREGATION    => '',
-        //Dependency::TYPE_COMPOSITION    => '',
-        Dependency::TYPE_EXTENSION => '<',
-        //Dependency::TYPE_GENERALIZATION => '',
-        Dependency::TYPE_INCLUSION => '>',
-        Dependency::TYPE_INHERITANCE => '^',
-        //Dependency::TYPE_REALIZATION    => ''
+        Dependency::TYPE_ASSOCIATION       => '-',
+        Dependency::TYPE_AGGREGATION       => '+->',
+        Dependency::TYPE_CLASS_INHERITANCE => '^-',
+        Dependency::TYPE_COMPOSITION       => '++-1>',
+        Dependency::TYPE_EXTENSION         => '<',
+        //Dependency::TYPE_GENERALIZATION  => '',
+        Dependency::TYPE_INCLUSION         => '>',
+        Dependency::TYPE_INHERITANCE       => '^',
+        //Dependency::TYPE_REALIZATION     => ''
     );
     
     /**
@@ -50,10 +52,13 @@ class Yuml extends AbstractGenerator
      * @var array
      */
     protected $nodeTypeToDslText = array(
+        Node::TYPE_NOTE     => '(note: %s{bg:%s})',
         Node::TYPE_USE_CASE => '(%s)',
     );
     
     /**
+     * The constuctor
+     * 
      * @param Client $httpClient
      */
     public function __construct(Client $httpClient)
@@ -70,8 +75,8 @@ class Yuml extends AbstractGenerator
     {
         if ($this->filter === null) {
             $this->filter = new \Zend\Filter\FilterChain();
-            $this->filter->attach(new \Zend\Filter\Word\DashToUnderscore())
-                         ->attach(new \Zend\Filter\Word\SeparatorToCamelCase(' '));
+            $this->filter->attach(new \Zend\Filter\Word\SeparatorToCamelCase(' '))
+                         ->attach(new \Zend\Filter\Word\DashToUnderscore());
         }
         return $this->filter;
     }
@@ -195,15 +200,29 @@ class Yuml extends AbstractGenerator
             $dslText .= $this->nodeToDslText($node);
             $dslText .= ',';
             
+            //Create a note if the note information is set
+            $dslText .= $this->noteFromNodeToDslText($node);
+            
             foreach ($node->getDependencies() as $dependency) {
                 $dslText .= $this->dependencyToDslText($dependency);
                 $dslText .= ',';
             }
         }
         
+        if (substr($dslText, -1, 1) == ',') {
+            $dslText = substr($dslText, 0, -1);
+        }
+        
         return $dslText;
     }
     
+    /**
+     * Converts a node to dsl text
+     *
+     * @param NodeInterface $node
+     * @throws \InvalidArgumentException
+     * @return string
+     */
     public function nodeToDslText(NodeInterface $node)
     {
         switch ($node->getNodeType()) {
@@ -216,6 +235,45 @@ class Yuml extends AbstractGenerator
         }
     }
     
+    /**
+     * Converts a note of a node to dsl text
+     * 
+     * @param NodeInterface $node
+     * @throws \InvalidArgumentException
+     * @return string
+     */
+    public function noteFromNodeToDslText(NodeInterface $node)
+    {
+        if (!$node instanceof NoteProviderInterface) {
+            throw new \InvalidArgumentException('Node must implement NoteProviderInterface');
+        } 
+        
+        $note   = $node->getNote();
+        $noteBg = $node->getNoteBg();
+        
+        if (!is_string($note) || strlen($note) < 1) {
+            return '';
+        }
+        
+        if (!is_string($noteBg) || strlen($noteBg) < 1) {
+            $noteBg = NoteProviderInterface::BG_BEIGE;
+        }
+        
+        $noteDslText = $this->useCaseNodeToDslText($node)
+                     . $this->dependncyTypeToDslText[Dependency::TYPE_ASSOCIATION]
+                     . sprintf($this->nodeTypeToDslText[Node::TYPE_NOTE], $note, $noteBg)
+                     . ',';
+        
+        return $noteDslText;
+    }
+    
+    /**
+     * Converts a dependency to dsl text
+     *
+     * @param DependencyInterface $dependency
+     * @throws \InvalidArgumentException
+     * @return string
+     */
     public function dependencyToDslText(DependencyInterface $dependency)
     {
         $type = $dependency->getType();
@@ -231,15 +289,31 @@ class Yuml extends AbstractGenerator
         return $dslText;
     }
     
+    /**
+     * Converts a node of type class to dsl text
+     *
+     * @param NodeInterface $node
+     * @throws \InvalidArgumentException
+     * @return string
+     */
     protected function classNodeToDslText(NodeInterface $node)
     {
         return 'Not implemented yet';
     }
     
+    /**
+     * Converts a node of type use case to dsl text
+     *
+     * @param NodeInterface $node
+     * @throws \InvalidArgumentException
+     * @return string
+     */
     protected function useCaseNodeToDslText(NodeInterface $node)
     {
+        $escaper = new \Zend\Escaper\Escaper();
+        
         $dslText = sprintf(
-            $this->nodeTypeToDslText[Node::TYPE_USE_CASE], 
+            $this->nodeTypeToDslText[Node::TYPE_USE_CASE],
             $this->getFilter()->filter($node->getNodeName())
         );
         
