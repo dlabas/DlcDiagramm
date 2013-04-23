@@ -53,7 +53,21 @@ class Diagramm implements DiagrammInterface
         self::TYPE_USE_CASE
     );
     
-	/**
+    /**
+     * Diagramm image
+     * 
+     * @var string
+     */
+    protected $asImage;
+    
+    /**
+     * Diagramm as text
+     * 
+     * @var string
+     */
+    protected $asText;
+    
+    /**
      * Getter for $type
      *
      * @return string $type
@@ -63,7 +77,7 @@ class Diagramm implements DiagrammInterface
         return $this->type;
     }
 
-	/**
+    /**
      * Setter for $type
      *
      * @param  string $type
@@ -75,7 +89,7 @@ class Diagramm implements DiagrammInterface
         return $this;
     }
 
-	/**
+    /**
      * Getter for $nodes
      *
      * @return array $nodes
@@ -85,7 +99,7 @@ class Diagramm implements DiagrammInterface
         return $this->nodes;
     }
 
-	/**
+    /**
      * Setter for $nodes
      *
      * @param  array $nodes
@@ -107,7 +121,7 @@ class Diagramm implements DiagrammInterface
         $this->nodes[$node->getNodeIdentifier()] = $node;
     }
 
-	/**
+    /**
      * Getter for $dependencies
      *
      * @return array $dependencies
@@ -117,7 +131,7 @@ class Diagramm implements DiagrammInterface
         return $this->dependencies;
     }
 
-	/**
+    /**
      * Setter for $dependencies
      *
      * @param  array $dependencies
@@ -140,7 +154,7 @@ class Diagramm implements DiagrammInterface
         $this->dependencies[] = $dependency;
         return $this;
     }
-	/**
+    /**
      * Getter for $availableTypes
      *
      * @return multitype: $availableTypes
@@ -149,7 +163,7 @@ class Diagramm implements DiagrammInterface
     {
         return $this->availableTypes;
     }
-	/**
+    /**
      * Getter for $generator
      *
      * @return \DlcDiagramm\Generator\AbstractGenerator $generator
@@ -159,7 +173,7 @@ class Diagramm implements DiagrammInterface
         return $this->generator;
     }
 
-	/**
+    /**
      * Setter for $generator
      *
      * @param  \DlcDiagramm\Generator\AbstractGenerator $generator
@@ -171,13 +185,73 @@ class Diagramm implements DiagrammInterface
         return $this;
     }
 
-    public function toText()
+    /**
+     * Getter for $asImage
+     *
+     * @return string $asImage
+     */
+    public function getAsImage()
     {
-        return $this->getGenerator()->generateText($this);
+        if ($this->asImage === null) {
+            $this->asImage = $this->getGenerator()->generateImage($this);;
+        }
+        return $this->asImage;
     }
 
+    /**
+     * Setter for $asImage
+     *
+     * @param  string $asImage
+     * @return Diagramm
+     */
+    public function setAsImage($asImage)
+    {
+        $this->asImage = $asImage;
+        return $this;
+    }
+
+    /**
+     * Getter for $asText
+     *
+     * @return string $asText
+     */
+    public function getAsText()
+    {
+        if ($this->asText === null) {
+            $this->asText = $this->getGenerator()->generateText($this);
+        }
+        return $this->asText;
+    }
+
+    /**
+     * Setter for $asText
+     *
+     * @param  string $asText
+     * @return Diagramm
+     */
+    public function setAsText($asText)
+    {
+        $this->asText = $asText;
+        return $this;
+    }
+
+    /**
+     * Returns thie diagramm as text
+     * 
+     * @return string
+     */
+    public function toText()
+    {
+        return $this->getAsText();
+    }
+
+    /**
+     * Returns the diagramm as image
+     * 
+     * @return string
+     */
     public function toImage()
     {
-        return $this->getGenerator()->generateImage($this);
+        return $this->getAsImage();
     }
 }

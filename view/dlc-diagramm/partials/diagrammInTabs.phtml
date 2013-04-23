@@ -1,0 +1,75 @@
+<?php
+    $activeTab = '';
+
+    if ($this->displayAs == 'both') {
+        $showImage = true;
+        $showText  = true;
+        $activeTab = 'image';
+    } elseif ($this->displayAs == 'image') {
+        $showImage = true;
+        $showText  = false;
+        $activeTab = 'image';
+    } elseif ($this->displayAs == 'text') {
+        $showImage = false;
+        $showText  = true;
+        $activeTab = 'text';
+    } else {
+        $showImage = false;
+        $showText  = false;
+    }
+    
+    if (isset($this->dataTab) && is_array($this->dataTab)) {
+        $showDataTab = true;
+        $activeTab   = 'data';
+    } else {
+        $showDataTab = false;
+    }
+    
+    if (isset($this->infoTab) && is_array($this->infoTab)) {
+        $showInfoTab = true;
+        $activeTab   = $activeTab == '' ? 'info' : $activeTab;
+    } else {
+        $showInfoTab = false;
+    }
+?>
+<div class="row-fluid">
+    <div class="span12">
+        <ul id="myTab" class="nav nav-tabs">
+            <?php if ($showDataTab): ?>
+                <li<?php echo ($activeTab == 'data' ? ' class="active"' : '') ?>><a href="#dataTab" data-toggle="tab"><?php echo $this->translate($this->dataTab['label']) ?></a></li>
+            <?php endif; ?>
+            <?php if ($showImage): ?>
+                <li<?php echo ($activeTab == 'image' ? ' class="active"' : '') ?>><a href="#digrammImage" data-toggle="tab"><?php echo $this->translate('Diagramm') ?></a></li>
+            <?php endif; ?>
+            <?php if ($showText): ?>
+                <li<?php echo ($activeTab == 'text' ? ' class="active"' : '') ?>><a href="#digrammText" data-toggle="tab"><?php echo $this->translate('Diagramm source') ?></a></li>
+            <?php endif; ?>
+            <?php if ($showInfoTab): ?>
+                <li<?php echo ($activeTab == 'info' ? ' class="active"' : '') ?>><a href="#infoTab" data-toggle="tab"><?php echo $this->translate($this->infoTab['label']) ?></a></li>
+            <?php endif; ?>
+        </ul>
+        
+        <div id="myTabContent" class="tab-content">
+            <?php if ($showDataTab): ?>
+                <div class="tab-pane fade<?php echo ($activeTab == 'data' ? '  in active' : '') ?>" id="dataTab">
+                    <p><?php echo $this->dataTab['data'] ?></p>
+                </div>
+            <?php endif; ?>
+            <?php if ($showImage): ?>
+                <div class="tab-pane fade<?php echo ($activeTab == 'image' ? '  in active' : '') ?>" id="digrammImage">
+                    <p><a href="<?php echo $this->diagramm->toImage() ?>" target="_blank"><img src="<?php echo $this->diagramm->toImage() ?>" /></a></p>
+                </div>
+            <?php endif; ?>
+            <?php if ($showText): ?>
+                <div class="tab-pane fade<?php echo ($activeTab == 'text' ? '  in active' : '') ?>" id="digrammText">
+                    <p><pre><?php echo $this->diagramm->toText() ?></pre></p>
+                </div>
+            <?php endif; ?>
+            <?php if ($showInfoTab): ?>
+                <div class="tab-pane fade<?php echo ($activeTab == 'info' ? '  in active' : '') ?>" id="infoTab">
+                    <p><?php echo $this->infoTab['data'] ?></p>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>

@@ -157,6 +157,8 @@ class Yuml extends AbstractGenerator
     {
         $dslText = $this->generateDslText($diagramm);
         
+        $diagramm->setAsText($dslText);
+        
         $httpClient = $this->getHttpClient();
         $httpClient->setUri($this->getUriForDiagrammType($diagramm->getType()));
         $httpClient->setParameterPost(array('dsl_text' => $dslText));
