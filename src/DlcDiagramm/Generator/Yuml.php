@@ -310,8 +310,6 @@ class Yuml extends AbstractGenerator
      */
     protected function useCaseNodeToDslText(NodeInterface $node)
     {
-        $escaper = new \Zend\Escaper\Escaper();
-        
         $dslText = sprintf(
             $this->nodeTypeToDslText[Node::TYPE_USE_CASE],
             $this->getFilter()->filter($node->getNodeName())
