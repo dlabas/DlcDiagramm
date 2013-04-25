@@ -1,37 +1,33 @@
 <?php
 namespace DlcDiagramm\Generator;
 
-use DlcDiagramm\Diagramm\Diagramm;
-
 use DlcDiagramm\Diagramm\Dependency;
 use DlcDiagramm\Diagramm\Dependency\DependencyInterface;
+use DlcDiagramm\Diagramm\Diagramm;
 use DlcDiagramm\Diagramm\DiagrammInterface;
 use DlcDiagramm\Diagramm\Node;
 use DlcDiagramm\Diagramm\Node\NodeInterface;
 use DlcDiagramm\Diagramm\NoteProviderInterface;
+use DlcDiagramm\Proxy\Yuml as YumlProxy;
 use Zend\Http\Client;
 
 class Yuml extends AbstractGenerator
 {
-    const YUML_URL = 'http://yuml.me/';
-    
-    const YUML_URL_CLASS_DIAGRAMM = 'http://yuml.me/diagram/class/';
-    const YUML_URL_USE_CASE_DIAGRAMM = 'http://yuml.me/diagram/usecase/';
-    
     /**
-     * @var Client
-     */
-    protected $httpClient;
-    
-    /**
-     * 
+     *
      * @var \Zend\Filter\Filter
      */
     protected $filter;
-    
+
+    /**
+     *
+     * @var YumlProxy
+     */
+    protected $proxy;
+
     /**
      * Dependency type to dsl text map
-     * 
+     *
      * @var array
      */
     protected $dependncyTypeToDslText = array(
@@ -45,27 +41,17 @@ class Yuml extends AbstractGenerator
         Dependency::TYPE_INHERITANCE       => '^',
         //Dependency::TYPE_REALIZATION     => ''
     );
-    
+
     /**
      * Node type to dsl text map
-     * 
+     *
      * @var array
      */
     protected $nodeTypeToDslText = array(
         Node::TYPE_NOTE     => '(note: %s{bg:%s})',
         Node::TYPE_USE_CASE => '(%s)',
     );
-    
-    /**
-     * The constuctor
-     * 
-     * @param Client $httpClient
-     */
-    public function __construct(Client $httpClient)
-    {
-        $this->httpClient = $httpClient;
-    }
-    
+
     /**
      * Getter for $filter
      *
@@ -74,9 +60,7 @@ class Yuml extends AbstractGenerator
     public function getFilter()
     {
         if ($this->filter === null) {
-            $this->filter = new \Zend\Filter\FilterChain();
-            $this->filter->attach(new \Zend\Filter\Word\SeparatorToCamelCase(' '))
-                         ->attach(new \Zend\Filter\Word\DashToUnderscore());
+            $this->setFilter($this->getServiceLocator()->get('dlcdiagramm_yuml_filter'));
         }
         return $this->filter;
     }
@@ -93,57 +77,31 @@ class Yuml extends AbstractGenerator
         return $this;
     }
 
-	/**
-     * Getter for $httpClient
+    /**
+     * Getter for $proxy
      *
-     * @return \Zend\Http\Client $httpClient
+     * @return \DlcDiagramm\Proxy\Yuml $proxy
      */
-    public function getHttpClient()
+    public function getProxy()
     {
-        return $this->httpClient;
+        if (!$this->proxy instanceof YumlProxy) {
+            $this->setProxy($this->getServiceLocator()->get('dlcdiagramm_yuml_proxy'));
+        }
+        return $this->proxy;
     }
 
-	/**
-     * Setter for $httpClient
+    /**
+     * Setter for $proxy
      *
-     * @param  \Zend\Http\Client $httpClient
+     * @param  \DlcDiagramm\Proxy\Yuml $proxy
      * @return Yuml
      */
-    public function setHttpClient($httpClient)
+    public function setProxy($proxy)
     {
-        $this->httpClient = $httpClient;
+        $this->proxy = $proxy;
         return $this;
     }
-    
-    /**
-     * Returns the URI for the yuml service for a diagramm type
-     * 
-     * @param string $type
-     * @throws \InvalidArgumentException
-     * @return string
-     */
-    public function getUriForDiagrammType($type)
-    {
-        switch ($type) {
-            case Diagramm::TYPE_ACTIVITY:
-                throw new \InvalidArgumentException('Unsupported diagramm type "' . $type . '"');
-                break;
-            case Diagramm::TYPE_CLASS:
-                $uri = self::YUML_URL_CLASS_DIAGRAMM;
-                break;
-            case Diagramm::TYPE_DIAGRAMM:
-                throw new \InvalidArgumentException('Unsupported diagramm type "' . $type . '"');
-                break;
-            case Diagramm::TYPE_USE_CASE:
-                $uri = self::YUML_URL_USE_CASE_DIAGRAMM;
-                break;
-            default:
-                throw new \InvalidArgumentException('Unkown diagramm type "' . $type . '"');
-                break;
-        }
-        return $uri;
-    }
-    
+
     /**
      * (non-PHPdoc)
      * @see \DlcDiagramm\Generator\AbstractGenerator::generate()
@@ -152,7 +110,7 @@ class Yuml extends AbstractGenerator
     {
         return $this->generateImage($diagramm);
     }
-    
+
     /**
      * Generates an image of the diagramm
      *
@@ -161,22 +119,12 @@ class Yuml extends AbstractGenerator
     public function generateImage(DiagrammInterface $diagramm)
     {
         $dslText = $this->generateDslText($diagramm);
-        
+
         $diagramm->setAsText($dslText);
-        
-        $httpClient = $this->getHttpClient();
-        $httpClient->setUri($this->getUriForDiagrammType($diagramm->getType()));
-        $httpClient->setParameterPost(array('dsl_text' => $dslText));
-        
-        $response = $httpClient->send();
-        
-        if (!$response->isSuccess()) {
-            throw new \UnexpectedValueException('HTTP Request failed');
-        }
-        
-        return self::YUML_URL . $response->getBody();
+
+        return $this->getProxy()->requestDiagramm($diagramm->getType(), $dslText);
     }
-    
+
     /**
      * Generates text diagramm of the diagramm
      *
@@ -186,7 +134,7 @@ class Yuml extends AbstractGenerator
     {
         return $this->generateDslText($diagramm);
     }
-    
+
     /**
      * Generates dsl text for the diagramm
      *
@@ -195,27 +143,27 @@ class Yuml extends AbstractGenerator
     public function generateDslText(DiagrammInterface $diagramm)
     {
         $dslText = '';
-        
+
         foreach ($diagramm->getNodes() as $node) {
             $dslText .= $this->nodeToDslText($node);
             $dslText .= ',';
-            
+
             //Create a note if the note information is set
             $dslText .= $this->noteFromNodeToDslText($node);
-            
+
             foreach ($node->getDependencies() as $dependency) {
                 $dslText .= $this->dependencyToDslText($dependency);
                 $dslText .= ',';
             }
         }
-        
+
         if (substr($dslText, -1, 1) == ',') {
             $dslText = substr($dslText, 0, -1);
         }
-        
+
         return $dslText;
     }
-    
+
     /**
      * Converts a node to dsl text
      *
@@ -234,10 +182,10 @@ class Yuml extends AbstractGenerator
                 break;
         }
     }
-    
+
     /**
      * Converts a note of a node to dsl text
-     * 
+     *
      * @param NodeInterface $node
      * @throws \InvalidArgumentException
      * @return string
@@ -246,27 +194,27 @@ class Yuml extends AbstractGenerator
     {
         if (!$node instanceof NoteProviderInterface) {
             throw new \InvalidArgumentException('Node must implement NoteProviderInterface');
-        } 
-        
+        }
+
         $note   = $node->getNote();
         $noteBg = $node->getNoteBg();
-        
+
         if (!is_string($note) || strlen($note) < 1) {
             return '';
         }
-        
+
         if (!is_string($noteBg) || strlen($noteBg) < 1) {
             $noteBg = NoteProviderInterface::BG_BEIGE;
         }
-        
+
         $noteDslText = $this->useCaseNodeToDslText($node)
                      . $this->dependncyTypeToDslText[Dependency::TYPE_ASSOCIATION]
                      . sprintf($this->nodeTypeToDslText[Node::TYPE_NOTE], $note, $noteBg)
                      . ',';
-        
+
         return $noteDslText;
     }
-    
+
     /**
      * Converts a dependency to dsl text
      *
@@ -277,18 +225,18 @@ class Yuml extends AbstractGenerator
     public function dependencyToDslText(DependencyInterface $dependency)
     {
         $type = $dependency->getType();
-        
+
         if (!array_key_exists($type, $this->dependncyTypeToDslText)) {
             throw new \InvalidArgumentException('Unknown dependncy type "' . $type . '"');
         }
-        
-        $dslText = $this->nodeToDslText($dependency->getFromNode()) 
+
+        $dslText = $this->nodeToDslText($dependency->getFromNode())
                  . $this->dependncyTypeToDslText[$type]
                  . $this->nodeToDslText($dependency->getToNode());
-        
+
         return $dslText;
     }
-    
+
     /**
      * Converts a node of type class to dsl text
      *
@@ -300,7 +248,7 @@ class Yuml extends AbstractGenerator
     {
         return 'Not implemented yet';
     }
-    
+
     /**
      * Converts a node of type use case to dsl text
      *
@@ -314,8 +262,8 @@ class Yuml extends AbstractGenerator
             $this->nodeTypeToDslText[Node::TYPE_USE_CASE],
             $this->getFilter()->filter($node->getNodeName())
         );
-        
+
         return $dslText;
     }
-    
+
 }

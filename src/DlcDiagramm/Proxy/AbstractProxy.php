@@ -1,12 +1,11 @@
 <?php
-namespace DlcDiagramm\Generator;
+namespace DlcDiagramm\Proxy;
 
 use DlcBase\Options\ModuleOptionsAwareInterface;
-use DlcDiagramm\Diagramm\DiagrammInterface;
 use Zend\ServiceManager\ServiceLocatorAwareInterface;
 use Zend\ServiceManager\ServiceLocatorInterface;
 
-abstract class AbstractGenerator implements ModuleOptionsAwareInterface, ServiceLocatorAwareInterface
+abstract class AbstractProxy implements ModuleOptionsAwareInterface, ServiceLocatorAwareInterface
 {
     /**
      * The module options
@@ -68,23 +67,11 @@ abstract class AbstractGenerator implements ModuleOptionsAwareInterface, Service
     }
 
     /**
-     * Generates the diagramm
+     * Requests a diagramm from a web service
      *
-     * @param DiagrammInterface $diagramm
+     * @param string $type
+     * @param string $text
+     * @return string
      */
-    abstract public function generate(DiagrammInterface $diagramm);
-
-    /**
-     * Generates an image of the diagramm
-     *
-     * @param DiagrammInterface $diagramm
-     */
-    abstract public function generateImage(DiagrammInterface $diagramm);
-
-    /**
-     * Generates text diagramm of the diagramm
-     *
-     * @param DiagrammInterface $diagramm
-     */
-    abstract public function generateText(DiagrammInterface $diagramm);
+    abstract public function requestDiagramm($type, $text);
 }

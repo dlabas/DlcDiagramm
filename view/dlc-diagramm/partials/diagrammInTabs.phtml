@@ -17,19 +17,25 @@
         $showImage = false;
         $showText  = false;
     }
-    
+
     if (isset($this->dataTab) && is_array($this->dataTab)) {
         $showDataTab = true;
         $activeTab   = 'data';
     } else {
         $showDataTab = false;
     }
-    
+
     if (isset($this->infoTab) && is_array($this->infoTab)) {
         $showInfoTab = true;
         $activeTab   = $activeTab == '' ? 'info' : $activeTab;
     } else {
         $showInfoTab = false;
+    }
+
+    if (isset($this->strategy) && $this->strategy == 'javascript') {
+        $strategy = 'javascript';
+    } else {
+        $strategy = 'php';
     }
 ?>
 <div class="row-fluid">
@@ -39,7 +45,7 @@
                 <li<?php echo ($activeTab == 'data' ? ' class="active"' : '') ?>><a href="#dataTab" data-toggle="tab"><?php echo $this->translate($this->dataTab['label']) ?></a></li>
             <?php endif; ?>
             <?php if ($showImage): ?>
-                <li<?php echo ($activeTab == 'image' ? ' class="active"' : '') ?>><a href="#digrammImage" data-toggle="tab"><?php echo $this->translate('Diagramm') ?></a></li>
+                <li<?php echo ($activeTab == 'image' ? ' class="active"' : '') ?>><a href="#digrammImage" id="digrammImageLink" data-toggle="tab"><?php echo $this->translate('Diagramm') ?></a></li>
             <?php endif; ?>
             <?php if ($showText): ?>
                 <li<?php echo ($activeTab == 'text' ? ' class="active"' : '') ?>><a href="#digrammText" data-toggle="tab"><?php echo $this->translate('Diagramm source') ?></a></li>
@@ -48,7 +54,7 @@
                 <li<?php echo ($activeTab == 'info' ? ' class="active"' : '') ?>><a href="#infoTab" data-toggle="tab"><?php echo $this->translate($this->infoTab['label']) ?></a></li>
             <?php endif; ?>
         </ul>
-        
+
         <div id="myTabContent" class="tab-content">
             <?php if ($showDataTab): ?>
                 <div class="tab-pane fade<?php echo ($activeTab == 'data' ? '  in active' : '') ?>" id="dataTab">
@@ -57,7 +63,11 @@
             <?php endif; ?>
             <?php if ($showImage): ?>
                 <div class="tab-pane fade<?php echo ($activeTab == 'image' ? '  in active' : '') ?>" id="digrammImage">
-                    <p><a href="<?php echo $this->diagramm->toImage() ?>" target="_blank"><img src="<?php echo $this->diagramm->toImage() ?>" /></a></p>
+                    <?php if ($strategy == 'javascript'): ?>
+                        <?php echo $this->partial('dlc-diagramm/partials/lazyLoadingYumlDiagramm.phtml', array('diagramm' => $this->diagramm)); ?>
+                    <?php else: ?>
+                        <p><a href="<?php echo $this->diagramm->toImage() ?>" target="_blank"><img src="<?php echo $this->diagramm->toImage() ?>" /></a></p>
+                    <?php endif; ?>
                 </div>
             <?php endif; ?>
             <?php if ($showText): ?>

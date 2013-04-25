@@ -1,0 +1,60 @@
+<div class="row-fluid text-center" id="loadingRow">
+    <div class="span12 text-center">
+        <p style="text-align: center; margin-top:20px;">
+            <img src="/img/spinner.gif" /><h4 style="text-align: center;">Loading diagramm image...</h4>
+        </p>
+    </div>
+</div>
+
+<div class="row-fluid text-center" id="imageRow">
+    <div class="span12 text-center">
+        <p style="text-align: center; margin-top:20px;">
+            <a id="imgLink" href="" target="_blank"></a>
+        </p>
+    </div>
+</div>
+<script>
+    $('#imageRow').hide();
+
+    $(function () {
+        $('#digrammImageLink').on('shown', function (e) {
+            //Zuerst wird der Tab in der Leiste aktiviert
+            //Dann wird diese function ausgeführt
+            //Zum schluss wird der TabInhalt angezeigt
+            if ($('#imgLink > img').length == 0) {
+
+                var request = $.ajax({
+                    url: '<?php echo $this->url('dlcdiagramm/yuml', array('dsl_text' => $this->diagramm->toText())); ?>',
+                    type: 'POST',
+                    data: {
+                        'dsl_text': '<?php echo $this->diagramm->toText() ?>',
+                        'type': '<?php echo $this->diagramm->getType() ?>'
+                    },
+                    dataType: 'html',
+                    success: function(data, text, xhqr){
+                        //Create image
+                	    var img = $( "<img>", {
+              		        src : data
+              		    });
+                	    //Insert image into link
+                	    $('#imgLink').append(img);
+                	    //Set link attributes
+                	    $('#imgLink').attr({
+                		    title: "",
+                		    href: data
+                		});
+                		//Remove loading hint
+                		//$('#imageLoading').remove();
+
+                		$('#loadingRow').toggle();
+                        $('#imageRow').toggle();
+                    }
+                });
+
+                request.fail(function(jqXHR, textStatus) {
+                    console.log("Request failed: " + textStatus);
+                });
+            }
+        });
+    })
+</script>
